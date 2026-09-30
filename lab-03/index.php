@@ -1,0 +1,70 @@
+<?php
+declare(strict_types=1);
+
+$calls = [125, 300, 60, 240, 90];
+
+try {
+    if ($calls === []) {
+        throw new RuntimeException('Массив звонков пуст');
+    }
+
+    $validCalls = [];
+    $totalDuration = 0;
+    $count = 0;
+    $maxDuration = 0;
+
+    foreach ($calls as $index => $duration) {
+        if ($duration === -1) { break; }
+        if ($duration === 0) { continue; }
+        if (!is_int($duration) || $duration < 0 || $duration > 7200) {
+            throw new InvalidArgumentException('Некорректная длительность в позиции ' . $index . ': ' . $duration . ' сек');
+        }
+        $totalDuration += $duration;
+        $count++;
+        $validCalls[] = $duration;
+        if ($duration > $maxDuration) { $maxDuration = $duration; }
+    }
+
+    if ($count === 0) {
+        throw new RuntimeException('Нет данных для расчета');
+    }
+
+    $averageDuration = round($totalDuration / $count, 2);
+    $totalMinutes = $totalDuration / 60;
+
+    $longCalls = 0;
+    for ($i = 0, $n = count($validCalls); $i < $n; $i++) {
+        if ($validCalls[$i] >= 1800) { $longCalls++; }
+    }
+
+    $loadCategory = match (true) {
+        $averageDuration < 60 => 'низкая',
+        $averageDuration < 300 => 'средняя',
+        $averageDuration < 1800 => 'высокая',
+        default => 'очень высокая',
+    };
+
+    if ($totalDuration < 3600) {
+        $totalCategory = 'малая суммарная нагрузка';
+    } elseif ($totalDuration < 10800) {
+        $totalCategory = 'умеренная суммарная нагрузка';
+    } else {
+        $totalCategory = 'высокая суммарная нагрузка';
+    }
+
+    echo '<h2>Анализ длительности звонков (вариант 18)</h2>';
+    echo '<ul>';
+    echo '<li>Обработано звонков: <b>' . $count . '</b></li>';
+    echo '<li>Общая длительность: <b>' . $totalDuration . ' сек</b> (' . round($totalMinutes, 2) . ' мин)</li>';
+    echo '<li>Средняя длительность: <b>' . $averageDuration . ' сек</b></li>';
+    echo '<li>Максимальная длительность: <b>' . $maxDuration . ' сек</b></li>';
+    echo '<li>Долгих звонков (>= 30 мин): <b>' . $longCalls . '</b></li>';
+    echo '<li>Категория нагрузки: <b>' . $loadCategory . '</b></li>';
+    echo '<li>Итог по суммарному времени: <b>' . $totalCategory . '</b></li>';
+    echo '</ul>';
+
+} catch (InvalidArgumentException | RuntimeException $e) {
+    echo '<p style="color:red">Ошибка: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
+} finally {
+    echo '<p>Обработка завершена</p>';
+}
